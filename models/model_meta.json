@@ -1,0 +1,43 @@
+{
+  "model": "xgboost",
+  "feature_set": "STANDARD",
+  "features": [
+    "log_amount",
+    "is_transfer",
+    "hour",
+    "is_night",
+    "dest_prior_txn_count",
+    "amount_to_oldbalance_ratio",
+    "sender_near_empty",
+    "sender_zero_balance"
+  ],
+  "threshold": 0.9967517852783203,
+  "scale_pos_weight": 534.7933022234422,
+  "best_iteration": 93,
+  "split": {
+    "train_end_step": 323.0,
+    "valid_end_step": 377.0
+  },
+  "validation_metrics": {
+    "pr_auc": 0.9390272333448496,
+    "roc_auc": 0.99987703845997,
+    "precision": 0.9373737373737374,
+    "recall": 0.8285714285714286,
+    "f1": 0.8796208530805687,
+    "tp": 464.0,
+    "fp": 31.0,
+    "fn": 96.0,
+    "tn": 409846.0
+  },
+  "test_metrics": {
+    "pr_auc": 0.9871425937627477,
+    "roc_auc": 0.9998537858838958,
+    "precision": 0.9866898148148148,
+    "recall": 0.8503740648379052,
+    "f1": 0.9134744173586927,
+    "tp": 3410.0,
+    "fp": 46.0,
+    "fn": 600.0,
+    "tn": 404021.0
+  }
+}

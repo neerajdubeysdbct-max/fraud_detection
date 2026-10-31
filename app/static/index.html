@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sentinel · Fraud Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#07090d; --panel:#0e1219; --panel2:#131923; --line:#1f2733; --ink:#e6edf6; --muted:#7a8799;
+    --accent:#22d3ee; --accent2:#a78bfa;
+    --low:#34d399; --med:#fbbf24; --high:#fb4b6b;
+    --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  }
+  :root[data-theme="light"]{
+    --bg:#eef1f6; --panel:#fff; --panel2:#f4f6fa; --line:#dbe1ea; --ink:#0f1722; --muted:#5c6a7e;
+    --accent:#0891b2; --accent2:#7c3aed; --low:#059669; --med:#d97706; --high:#e11d48;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Space Grotesk",system-ui,sans-serif;min-height:100vh;
+    background-image:radial-gradient(900px 400px at 85% -10%,color-mix(in srgb,var(--accent2) 14%,transparent),transparent),
+                     radial-gradient(700px 400px at -10% 0,color-mix(in srgb,var(--accent) 12%,transparent),transparent)}
+  .shell{max-width:1200px;margin:0 auto;padding:20px 20px 60px}
+  /* top bar */
+  .top{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:12px 0 22px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;letter-spacing:.02em}
+  .logo svg{width:28px;height:28px}
+  .logo small{display:block;font-weight:400;font-size:11px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
+  .spacer{flex:1}
+  .chip{font:12px var(--mono);padding:5px 11px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--muted);display:flex;align-items:center;gap:8px}
+  .chip b{color:var(--ink);font-weight:600}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+  .dot.on{background:var(--low);box-shadow:0 0 8px var(--low)}
+  .dot.off{background:var(--high)}
+  .icon-btn{background:var(--panel);border:1px solid var(--line);color:var(--muted);border-radius:6px;width:32px;height:30px;cursor:pointer;font-size:14px}
+  /* layout */
+  .main{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start}
+  @media(max-width:900px){.main{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .panel h2{margin:0 0 14px;font:600 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .panel h2::before{content:"";width:14px;height:2px;background:var(--accent)}
+  label{display:block;font-size:12px;color:var(--muted);margin:13px 0 5px}
+  input,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);font:13px var(--mono)}
+  input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .seg{display:grid;grid-template-columns:1fr 1fr;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:3px}
+  .seg button{border:0;background:none;color:var(--muted);padding:8px;border-radius:6px;font:600 12px var(--mono);cursor:pointer}
+  .seg button.on{background:var(--accent);color:#04131a}
+  .hint{font-size:11px;color:var(--muted);margin-top:4px}
+  .check{display:flex;gap:9px;align-items:flex-start;margin-top:14px;font-size:12px;color:var(--muted);cursor:pointer}
+  .check input{width:auto;margin-top:2px;accent-color:var(--accent)}
+  .go{width:100%;margin-top:18px;padding:12px;border:0;border-radius:9px;font:700 14px "Space Grotesk";letter-spacing:.04em;cursor:pointer;
+    color:#04131a;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .go:disabled{opacity:.55;cursor:wait}
+  .samples{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .samples button{padding:8px;border-radius:8px;border:1px dashed var(--line);background:none;color:var(--muted);font:12px var(--mono);cursor:pointer}
+  .samples button:hover{color:var(--ink);border-color:var(--muted)}
+  .err{margin-top:12px;padding:10px 12px;border-radius:8px;font-size:12px;color:var(--high);background:color-mix(in srgb,var(--high) 12%,transparent);border:1px solid color-mix(in srgb,var(--high) 35%,transparent)}
+  /* result */
+  .stack{display:grid;gap:18px}
+  .result{display:grid;grid-template-columns:230px 1fr;gap:24px;align-items:center}
+  @media(max-width:620px){.result{grid-template-columns:1fr;justify-items:center}}
+  .dial{position:relative;width:210px;height:210px}
+  .dial svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .dial .track{stroke:var(--line)}
+  .dial .arc{stroke:var(--c,var(--accent));transition:stroke-dashoffset .8s cubic-bezier(.2,.8,.2,1),stroke .3s;filter:drop-shadow(0 0 6px var(--c,var(--accent)))}
+  .dial .tick{stroke:var(--ink)}
+  .dial .mid{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+  .dial .num{font-size:40px;font-weight:700;letter-spacing:-.03em;line-height:1}
+  .dial .cap{font:11px var(--mono);color:var(--muted);letter-spacing:.14em;margin-top:6px}
+  .verdict{font-size:22px;font-weight:700;margin:0 0 4px}
+  .tag{display:inline-block;font:600 11px var(--mono);letter-spacing:.1em;padding:4px 10px;border-radius:5px;border:1px solid}
+  .LOW{color:var(--low);border-color:var(--low);background:color-mix(in srgb,var(--low) 12%,transparent)}
+  .MEDIUM{color:var(--med);border-color:var(--med);background:color-mix(in srgb,var(--med) 12%,transparent)}
+  .HIGH{color:var(--high);border-color:var(--high);background:color-mix(in srgb,var(--high) 14%,transparent)}
+  .why{margin-top:16px;display:grid;gap:7px}
+  .why-row{display:grid;grid-template-columns:150px 1fr 54px;gap:10px;align-items:center;font-size:12px}
+  .why-row .bar{height:6px;background:var(--panel2);border-radius:3px;position:relative}
+  .why-row .bar i{position:absolute;top:0;bottom:0;border-radius:3px}
+  .why-row .bar::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--muted)}
+  .why-row b{font:12px var(--mono);text-align:right;color:var(--muted);font-weight:400}
+  .idle{display:grid;place-items:center;text-align:center;color:var(--muted);padding:40px 10px}
+  .idle svg{width:46px;height:46px;opacity:.5;margin-bottom:10px}
+  /* feed */
+  .feed{display:grid;gap:8px}
+  .item{display:grid;grid-template-columns:4px 78px 1fr auto auto;gap:14px;align-items:center;padding:10px 14px 10px 0;background:var(--panel2);border:1px solid var(--line);border-radius:9px;overflow:hidden;font-size:13px}
+  .item .stripe{align-self:stretch;background:var(--c)}
+  .item .t{font:11px var(--mono);color:var(--muted)}
+  .item .d{font:12px var(--mono);color:var(--muted)}
+  .item .d b{color:var(--ink);font-weight:600}
+  .item .p{font:600 13px var(--mono)}
+  @media(max-width:620px){.item{grid-template-columns:4px 1fr auto}.item .t,.item .d{display:none}}
+  .none{color:var(--muted);text-align:center;padding:18px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <div class="logo">
+      <svg viewBox="0 0 32 32" fill="none"><path d="M16 2 4 7v8c0 8 5 13 12 15 7-2 12-7 12-15V7L16 2Z" stroke="url(#g)" stroke-width="2.2"/><path d="m11 16 4 4 6-8" stroke="url(#g)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="g" x1="4" y1="2" x2="28" y2="30"><stop stop-color="#22d3ee"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs></svg>
+      <div>Sentinel<small>Fraud Console</small></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="chip" id="model"><span class="dot"></span>connecting…</div>
+    <button class="icon-btn" id="theme" title="Toggle theme">◐</button>
+  </div>
+
+  <div class="main">
+    <form class="panel" id="form">
+      <h2>Transaction</h2>
+      <label>Type</label>
+      <div class="seg" id="seg">
+        <button type="button" data-v="TRANSFER" class="on">TRANSFER</button>
+        <button type="button" data-v="CASH_OUT">CASH_OUT</button>
+      </div>
+      <input type="hidden" id="type" value="TRANSFER">
+      <div class="row">
+        <div><label for="step">Step (hour)</label><input id="step" type="number" min="0" step="1" value="10" required></div>
+        <div><label for="amount">Amount</label><input id="amount" type="number" min="0" step="any" value="181" required></div>
+      </div>
+      <label for="oldbalanceOrg">Sender balance before</label>
+      <input id="oldbalanceOrg" type="number" min="0" step="any" value="181" required>
+      <label for="nameDest">Destination account</label>
+      <input id="nameDest" type="text" value="C553264065" required>
+      <div class="hint">C = customer · M = merchant</div>
+      <label class="check"><input type="checkbox" id="record"> Count this toward the destination's history</label>
+      <button class="go" id="go" type="submit">ANALYZE TRANSACTION</button>
+      <div class="samples">
+        <button type="button" data-sample="fraud">▲ suspicious</button>
+        <button type="button" data-sample="ok">● normal</button>
+      </div>
+      <div id="error"></div>
+    </form>
+
+    <div class="stack">
+      <div class="panel" id="result">
+        <h2>Risk assessment</h2>
+        <div class="idle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5l-8-3Z"/></svg>
+          Submit a transaction to score it.
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Live feed</h2>
+        <div class="feed" id="hist"><div class="none">No checks yet</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const SAMPLES = {
+  fraud: {type:"TRANSFER", step:10, amount:181, oldbalanceOrg:181, nameDest:"C553264065"},
+  ok:    {type:"CASH_OUT", step:14, amount:250, oldbalanceOrg:48000, nameDest:"C1231006815"},
+};
+const fmt = n => Number(n).toLocaleString(undefined,{maximumFractionDigits:2});
+const pct = p => (p*100).toFixed(p < .01 ? 2 : 1) + "%";
+const COLOR = {LOW:"var(--low)", MEDIUM:"var(--med)", HIGH:"var(--high)"};
+const LABELS = {log_amount:"Amount (log)", is_transfer:"Is a transfer", hour:"Hour of day", is_night:"Night time",
+  dest_prior_txn_count:"Prior txns to dest.", amount_to_oldbalance_ratio:"Amount / balance",
+  sender_near_empty:"Drains the account", sender_zero_balance:"Sender balance is 0"};
+const history = [];
+const R = 90, C = 2 * Math.PI * R;
+
+// theme
+try{ const t = localStorage.getItem("theme"); if(t) document.documentElement.dataset.theme = t; }catch{}
+$("theme").onclick = () => {
+  const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+  document.documentElement.dataset.theme = next;
+  try{ localStorage.setItem("theme", next); }catch{}
+};
+
+// type selector
+function setType(v){
+  $("type").value = v;
+  document.querySelectorAll("#seg button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+}
+document.querySelectorAll("#seg button").forEach(b => b.onclick = () => setType(b.dataset.v));
+
+function fill(s){ for (const k in s){ k === "type" ? setType(s[k]) : $(k).value = s[k]; } }
+document.querySelectorAll("[data-sample]").forEach(b => b.onclick = () => { fill(SAMPLES[b.dataset.sample]); $("form").requestSubmit(); });
+
+async function loadModel(){
+  try{
+    const r = await fetch("/model"); if(!r.ok) throw 0;
+    const m = await r.json(), t = m.test_metrics || {};
+    $("model").innerHTML = `<span class="dot on"></span><b>${m.model_name}</b> thr ${m.threshold.toFixed(2)}` +
+      (t.recall ? ` · recall <b>${(t.recall*100).toFixed(1)}%</b> · prec <b>${(t.precision*100).toFixed(1)}%</b>` : "");
+  }catch{ $("model").innerHTML = `<span class="dot off"></span>API offline`; }
+}
+
+function render(r){
+  const reasons = r.reasons || [];
+  const maxc = Math.max(...reasons.map(x => Math.abs(x.contribution)), 0.001);
+  const col = COLOR[r.risk_band], p = Math.min(1, r.fraud_probability);
+  const tickAngle = r.threshold * 360;
+  $("result").innerHTML = `
+    <h2>Risk assessment</h2>
+    <div class="result" style="--c:${col}">
+      <div class="dial">
+        <svg viewBox="0 0 210 210">
+          <circle class="track" cx="105" cy="105" r="${R}" fill="none" stroke-width="12"/>
+          <circle class="arc" id="arc" cx="105" cy="105" r="${R}" fill="none" stroke-width="12" stroke-linecap="round"
+            stroke-dasharray="${C}" stroke-dashoffset="${C}"/>
+          <line class="tick" x1="105" y1="3" x2="105" y2="21" stroke-width="3" transform="rotate(${tickAngle} 105 105)"/>
+        </svg>
+        <div class="mid"><div class="num">${pct(r.fraud_probability)}</div><div class="cap">FRAUD PROB.</div></div>
+      </div>
+      <div>
+        <div class="verdict">${r.is_fraud ? "Flagged as likely fraud" : "Looks legitimate"}</div>
+        <span class="tag ${r.risk_band}">${r.risk_band} RISK</span>
+        <span class="hint" style="margin-left:8px">decision threshold ${(r.threshold*100).toFixed(0)}% (white tick)</span>
+        ${reasons.length ? `<div class="why">${reasons.map(x => {
+          const w = Math.abs(x.contribution)/maxc*50, up = x.contribution > 0;
+          return `<div class="why-row"><span>${LABELS[x.feature] || x.feature}</span>
+            <div class="bar"><i style="width:${w}%;${up ? "left:50%;background:var(--high)" : `left:${50-w}%;background:var(--low)`}"></i></div>
+            <b>${up ? "+" : ""}${x.contribution.toFixed(2)}</b></div>`;}).join("")}
+          <div class="hint">Red pushes toward fraud, green toward legitimate (log-odds).</div></div>` : ""}
+      </div>
+    </div>`;
+  requestAnimationFrame(() => requestAnimationFrame(() => { $("arc").style.strokeDashoffset = C * (1 - p); }));
+}
+
+function renderHistory(){
+  $("hist").innerHTML = history.map(h => `<div class="item" style="--c:${COLOR[h.r.risk_band]}">
+    <div class="stripe"></div><div class="t">${h.time}</div>
+    <div class="d"><b>${h.t.type}</b> · ${fmt(h.t.amount)} → ${h.t.nameDest}</div>
+    <div class="p">${pct(h.r.fraud_probability)}</div>
+    <span class="tag ${h.r.risk_band}">${h.r.is_fraud ? "FLAGGED" : h.r.risk_band}</span></div>`).join("");
+}
+
+$("form").addEventListener("submit", async e => {
+  e.preventDefault();
+  $("error").innerHTML = ""; $("go").disabled = true;
+  const t = {type:$("type").value, step:+$("step").value, amount:+$("amount").value,
+             oldbalanceOrg:+$("oldbalanceOrg").value, nameDest:$("nameDest").value.trim()};
+  try{
+    const res = await fetch(`/predict?explain=true&record_history=${$("record").checked}`,
+      {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(t)});
+    const data = await res.json();
+    if(!res.ok){
+      const d = data.detail;
+      throw new Error(Array.isArray(d) ? d.map(x => `${x.loc.slice(-1)}: ${x.msg}`).join("; ") : d || "Request failed");
+    }
+    render(data);
+    history.unshift({t, r:data, time:new Date().toLocaleTimeString()});
+    history.splice(10); renderHistory();
+  }catch(err){
+    $("error").innerHTML = `<div class="err">${err.message === "Failed to fetch" ? "Cannot reach the API." : err.message}</div>`;
+  }finally{ $("go").disabled = false; }
+});
+
+loadModel();
+</script>
+</body>
+</html>
